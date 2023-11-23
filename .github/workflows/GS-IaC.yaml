@@ -4,7 +4,6 @@ on:
   push:
     branches:
     - main
-    
 
 env:
   TERRAFORM_VERSION: 1.6.2
@@ -17,7 +16,7 @@ jobs:
  
     steps:
 
-    - name: Step 01 - Terraform Setup instalar
+    - name: Step 01 - Terraform Setup
       uses: hashicorp/setup-terraform@v2
       with:
         terraform_version: $TERRAFORM_VERSION
