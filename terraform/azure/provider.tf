@@ -13,12 +13,12 @@ terraform {
     #   version = ">= 3.5"
     # }
   }
-  backend "azurerm" {
-    resource_group_name  = "rg-staticsite-vm-tf"
-    storage_account_name = "staticsitevmkbtf001"
-    container_name       = "tfstate"
-    key                  = "terraform.tfstate"
-  }
+  #backend "azurerm" {
+    #resource_group_name  = "iac-gs"
+    #storage_account_name = "staticsitevmkbtf001"
+    #container_name       = "tfstate"
+    #key                  = "terraform.tfstate"
+  #}
 }
 
 provider "azurerm" {
