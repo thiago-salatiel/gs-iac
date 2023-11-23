@@ -1,3 +1,13 @@
+provider "azurerm" {
+  features {}
+}
+
+# Grupo de Recursos
+resource "azurerm_resource_group" "iac-gs" {
+  name     = "iac-gs"
+  location = "East US"
+}
+
 # Criação da Rede Virtual e Subnet
 resource "azurerm_virtual_network" "gs-vnet" {
   name                = "gs-vnet"
@@ -13,50 +23,50 @@ resource "azurerm_subnet" "gs-subnet" {
   address_prefixes     = ["10.0.2.0/24"]
 }
 
-# Grupo de Recursos
-resource "azurerm_resource_group" "iac-gs" {
-  name     = "iac-gs"
-  location = "East US"
+# Criação das Interfaces de Rede
+resource "azurerm_network_interface" "vm-nic" {
+  count                     = 2
+  name                      = "vm-nic-${count.index}"
+  location                  = "East US"
+  resource_group_name       = azurerm_resource_group.iac-gs.name
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.gs-subnet.id
+    private_ip_address_allocation = "Dynamic"
+  }
 }
 
 # Criação das VMs
-resource "azurerm_virtual_machine" "vm" {
+resource "azurerm_linux_virtual_machine" "vm" {
   count                            = 2
   name                             = "Apache${count.index}"
   location                         = "East US"
   resource_group_name              = azurerm_resource_group.iac-gs.name
-  network_interface_ids            = [azurerm_network_interface.gs-vnet[count.index].id]
-  vm_size                          = "Standard_DS1_v2"
-  delete_os_disk_on_termination    = true
-  delete_data_disks_on_termination = true
-  storage_image_reference {
+  network_interface_ids            = [azurerm_network_interface.vm-nic[count.index].id]
+  size                             = "Standard_DS1_v2"
+  admin_username                   = "thiago"
+  admin_password                   = "Password1234!"
+  disable_password_authentication  = false
+
+  source_image_reference {
     publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-jammy"
-    sku       = "22_04-lts"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
     version   = "latest"
   }
-  storage_os_disk {
-    name              = "apache-vm-disk${count.index}"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "Standard_LRS"
-  }
-  os_profile {
-    computer_name  = "Apache${count.index}"
-    admin_username = "thiago"
-    admin_password = "Password1234!"    
-  }
-  os_profile_linux_config {
-    disable_password_authentication = false
-  }
 
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+    disk_size_gb         = 30
+  }
 }
 
 # Script de inicialização para instalar Apache e configurar a página HTML
 resource "azurerm_virtual_machine_extension" "customScript" {
   count                = 2
-  name                 = "hostname"
-  virtual_machine_id   = azurerm_virtual_machine.vm[count.index].id
+  name                 = "hostname-${count.index}"
+  virtual_machine_id   = azurerm_linux_virtual_machine.vm[count.index].id
   publisher            = "Microsoft.Azure.Extensions"
   type                 = "CustomScript"
   type_handler_version = "2.0"
@@ -72,9 +82,10 @@ SETTINGS
 resource "azurerm_lb" "gs-lb" {
   name                = "GSLoadBalancer"
   location            = "East US"
-  resource_group_name = azurerm_resource_group.gs-lb.name
+  resource_group_name = azurerm_resource_group.iac-gs.name
+
   frontend_ip_configuration {
-  name = "publicIPAddress"
+    name = "publicIPAddress"
   }
 }
 
@@ -93,7 +104,7 @@ resource "azurerm_lb_probe" "gs_lb_probe" {
 }
 
 resource "azurerm_lb_rule" "main" {
-  resource_group_name            = azurerm_resource_group.main.name
+  resource_group_name            = azurerm_resource_group.iac-gs.name
   loadbalancer_id                = azurerm_lb.gs-lb.id
   name                           = "LBRule"
   protocol                       = "Tcp"
