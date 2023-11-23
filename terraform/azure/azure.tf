@@ -44,8 +44,7 @@ resource "azurerm_virtual_machine" "vm" {
   os_profile {
     computer_name  = "Apache${count.index}"
     admin_username = "thiago"
-    admin_password = "Password1234!"
-    custom_data    = "${base64encode(data.template_file.cloud_init.rendered)}"
+    admin_password = "Password1234!"    
   }
   os_profile_linux_config {
     disable_password_authentication = false
@@ -74,9 +73,8 @@ resource "azurerm_lb" "gs-lb" {
   name                = "GSLoadBalancer"
   location            = "East US"
   resource_group_name = azurerm_resource_group.gs-lb.name
-
   frontend_ip_configuration {
-    name = "publicIPAddress"
+  name = "publicIPAddress"
   }
 }
 
