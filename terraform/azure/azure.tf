@@ -1,7 +1,3 @@
-provider "azurerm" {
-  features {}
-}
-
 # Grupo de Recursos
 resource "azurerm_resource_group" "iac-gs" {
   name     = "iac-gs"
